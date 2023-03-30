@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <script src="https://unpkg.com/three@0.147.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://unpkg.com/three@0.147.0/examples/js/loaders/GLTFLoader.js"></script>
+
+    <script>
+      let camera;
+
+      // ページの読み込みを待つ
+      window.addEventListener('DOMContentLoaded', init);
+      // カメラを作成
+      // 画面サイズを取得する
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+
+      // 非同期処理で待機するのでasync function宣言とする
+      async function init() {
+        
+
+        // レンダラーを作成
+        const canvasElement = document.querySelector('#myCanvas');
+        // レンダラーを作成
+        const renderer = new THREE.WebGLRenderer({ 
+          canvas: canvasElement, 
+          alpha: true, // 背景を透明にする
+        });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(width, height);
+        renderer.setClearColor(0x000000, 0); // 背景色を透明にする
+
+        // シーンを作成
+        const scene = new THREE.Scene();
+
+      
+        // 平行光源を作成
+        // 上から照らす
+        const directionalLight = new THREE.DirectionalLight(0xffffff);
+        directionalLight.position.set(1, 1, 1);
+        scene.add(directionalLight);
+
+        // 横からテラス
+        const directionalLight2 = new THREE.DirectionalLight(0xffffff);
+        directionalLight2.position.set(1, 0, 1);
+        scene.add(directionalLight2);
+
+        // GLTF形式のモデルデータを読み込む
+        const loader = new THREE.GLTFLoader();
+        // GLTFファイルのパスを指定
+        const gltf = await loader.loadAsync("3d_assets/cookie_model.gltf");
+        // 読み込み後に3D空間に追加
+        const cookieModel = gltf.scene;
+        scene.add(cookieModel);
+
+        // Create a canvas for the text
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 512;
+        canvas.height = 512;
+        ctx.fillStyle = '#000000';
+        ctx.font = '64px Arial';
+        ctx.fillText('Hello, World!', 128, 256);
+
+        // Create a texture from the canvas
+        const texture = new THREE.CanvasTexture(canvas);
+
+        // Apply the texture to the cookie cookieModel
+        cookieModel.traverse(function (child) {
+          if (child.isMesh) {
+            child.material.map = texture;
+            child.material.needsUpdate = true;
+          }
+        });
+
+        // カメラを作成
+        const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 10000);
+
+        // カメラの初期位置をモデルの正面にする
+        const bbox = new THREE.Box3().setFromObject(cookieModel);
+        const center = new THREE.Vector3();
+        bbox.getCenter(center);
+        camera.position.set(center.x, center.y, center.z + 10);
+        camera.lookAt(center);
+
+        // カメラコントローラーを作成
+        const controls = new THREE.OrbitControls(camera, canvasElement);
+        controls.target.set(center.x, center.y, center.z);
+        controls.update();
+
+
+        // モデルをウィンドウサイズに合わせて調整する
+        const modelSize = new THREE.Vector3();
+        bbox.getSize(modelSize);
+        const modelAspect = modelSize.x / modelSize.y;
+        const aspect = window.innerWidth / window.innerHeight;
+        const scale = (aspect > modelAspect) ? window.innerHeight / modelSize.y : window.innerWidth / modelSize.x;
+        cookieModel.scale.set(scale, scale, scale);
+
+        tick();
+
+        // 毎フレーム時に実行されるループイベントです
+        function tick() {
+          // モデルの回転
+          cookieModel.rotation.y += 0.01;
+
+          // レンダリング
+          renderer.render(scene, camera);
+
+          // 次のフレームを要求
+          requestAnimationFrame(tick);
+        }
+
+        // ウィンドウサイズが変更された場合にレンダラーのサイズを更新する
+        window.addEventListener('resize', () => {
+          const width = window.innerWidth;
+          const height = window.innerHeight;
+
+          renderer.setSize(width, height);
+          camera.aspect = width / height;
+          camera.updateProjectionMatrix();
+
+          const modelSize = new THREE.Vector3();
+          bbox.getSize(modelSize);
+          const modelAspect = modelSize.x / modelSize.y;
+          const aspect = window.innerWidth / window.innerHeight;
+          const scale = (aspect > modelAspect) ? window.innerHeight / modelSize.y : window.innerWidth / modelSize.x;
+          cookieModel.scale.set(scale, scale, scale);
+        });
+      }
+    </script>
+ </head>
+ <body>
+   <canvas id="myCanvas"></canvas>
+ </body>
+</html>
