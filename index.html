@@ -1,137 +1,109 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8" />
-    <script src="https://unpkg.com/three@0.147.0/build/three.min.js"></script>
-    <script src="https://unpkg.com/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://unpkg.com/three@0.147.0/examples/js/loaders/GLTFLoader.js"></script>
+<head>
+    <title>Canette</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        #vanta_b {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        }
+        #text {
+            position: absolute;
+            top: 65%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 36px;
+            font-weight: bold;
+            text-align: center;
+            color: white;
+            text-shadow: 0 0 0.2em rgba(0,0,0,1);
+        }
+    </style>
+</head>
+<body>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
+    <div id="vanta_b" style="width: 100%; height: 100%;"></div>
+    <div id="text">Coming soon...</div>
+
+    <!-- <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.waves.min.js"></script>
     <script>
-      let camera;
+    VANTA.WAVES({
+      el: "#vanta_b",
+      mouseControls: true,
+      touchControls: true,
+      gyroControls: false,
+      minHeight: window.innerHeight,
+      minWidth: window.innerWidth,
+      scale: 1.00,
+      scaleMobile: 1.00,
+      shininess: 40.00,
+      waveHeight: 20.50,
+      waveSpeed: 0.45
+    })
+    </script> -->
+    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.clouds.min.js"></script>
+    <script>
+      VANTA.CLOUDS({
+        el: "#vanta_b",
+        mouseControls: true,
+        touchControls: true,
+        gyroControls: false,
+        minHeight: 200.00,
+        minWidth: 200.00
+      })
+      </script>
+    <script>
+        // レンダラーを作成する
+        const renderer = new THREE.WebGLRenderer({ alpha: true });
 
-      // ページの読み込みを待つ
-      window.addEventListener('DOMContentLoaded', init);
-      // カメラを作成
-      // 画面サイズを取得する
-      const width = window.innerWidth;
-      const height = window.innerHeight;
+        renderer.setClearColor(0x000000, 0);
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        document.body.appendChild( renderer.domElement );
 
-      // 非同期処理で待機するのでasync function宣言とする
-      async function init() {
-        
-
-        // レンダラーを作成
-        const canvasElement = document.querySelector('#myCanvas');
-        // レンダラーを作成
-        const renderer = new THREE.WebGLRenderer({ 
-          canvas: canvasElement, 
-          alpha: true, // 背景を透明にする
-        });
-        renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.setSize(width, height);
-        renderer.setClearColor(0x000000, 0); // 背景色を透明にする
-
-        // シーンを作成
+        // シーンを作成する
         const scene = new THREE.Scene();
 
-      
-        // 平行光源を作成
-        // 上から照らす
-        const directionalLight = new THREE.DirectionalLight(0xffffff);
-        directionalLight.position.set(1, 1, 1);
-        scene.add(directionalLight);
+        // カメラを作成する
+        const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+        camera.position.z = 5;
 
-        // 横からテラス
-        const directionalLight2 = new THREE.DirectionalLight(0xffffff);
-        directionalLight2.position.set(1, 0, 1);
-        scene.add(directionalLight2);
+        // 立方体を作成する
+        const geometry = new THREE.BoxGeometry();
+        const material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+        const cube = new THREE.Mesh( geometry, material );
+        scene.add( cube );
 
-        // GLTF形式のモデルデータを読み込む
-        const loader = new THREE.GLTFLoader();
-        // GLTFファイルのパスを指定
-        const gltf = await loader.loadAsync("3d_assets/cookie_model.gltf");
-        // 読み込み後に3D空間に追加
-        const cookieModel = gltf.scene;
-        scene.add(cookieModel);
-
-        // Create a canvas for the text
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = 512;
-        canvas.height = 512;
-        ctx.fillStyle = '#000000';
-        ctx.font = '64px Arial';
-        ctx.fillText('Hello, World!', 128, 256);
-
-        // Create a texture from the canvas
-        const texture = new THREE.CanvasTexture(canvas);
-
-        // Apply the texture to the cookie cookieModel
-        cookieModel.traverse(function (child) {
-          if (child.isMesh) {
-            child.material.map = texture;
-            child.material.needsUpdate = true;
-          }
-        });
-
-        // カメラを作成
-        const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 10000);
-
-        // カメラの初期位置をモデルの正面にする
-        const bbox = new THREE.Box3().setFromObject(cookieModel);
-        const center = new THREE.Vector3();
-        bbox.getCenter(center);
-        camera.position.set(center.x, center.y, center.z + 10);
-        camera.lookAt(center);
-
-        // カメラコントローラーを作成
-        const controls = new THREE.OrbitControls(camera, canvasElement);
-        controls.target.set(center.x, center.y, center.z);
-        controls.update();
-
-
-        // モデルをウィンドウサイズに合わせて調整する
-        const modelSize = new THREE.Vector3();
-        bbox.getSize(modelSize);
-        const modelAspect = modelSize.x / modelSize.y;
-        const aspect = window.innerWidth / window.innerHeight;
-        const scale = (aspect > modelAspect) ? window.innerHeight / modelSize.y : window.innerWidth / modelSize.x;
-        cookieModel.scale.set(scale, scale, scale);
-
-        tick();
-
-        // 毎フレーム時に実行されるループイベントです
-        function tick() {
-          // モデルの回転
-          cookieModel.rotation.y += 0.01;
-
-          // レンダリング
-          renderer.render(scene, camera);
-
-          // 次のフレームを要求
-          requestAnimationFrame(tick);
-        }
-
-        // ウィンドウサイズが変更された場合にレンダラーのサイズを更新する
-        window.addEventListener('resize', () => {
+        window.addEventListener('resize', function(){
           const width = window.innerWidth;
           const height = window.innerHeight;
-
+      
+          renderer.setPixelRatio(window.devicePixelRatio);
           renderer.setSize(width, height);
+      
           camera.aspect = width / height;
           camera.updateProjectionMatrix();
-
-          const modelSize = new THREE.Vector3();
-          bbox.getSize(modelSize);
-          const modelAspect = modelSize.x / modelSize.y;
-          const aspect = window.innerWidth / window.innerHeight;
-          const scale = (aspect > modelAspect) ? window.innerHeight / modelSize.y : window.innerWidth / modelSize.x;
-          cookieModel.scale.set(scale, scale, scale);
         });
-      }
+
+        // アニメーションを追加する
+        function animate() {
+            requestAnimationFrame( animate );
+            // cube.rotation.x += 0.01;
+            cube.rotation.y += 0.01;
+            renderer.render( scene, camera );
+        }
+        animate();
     </script>
- </head>
- <body>
-   <canvas id="myCanvas"></canvas>
- </body>
+
+</body>
 </html>
